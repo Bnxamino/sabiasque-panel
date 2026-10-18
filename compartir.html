@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Compartir vídeo</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --azul: #1F3BFF; --lima: #D7FF3B; --fondo: #0B1240; --tarjeta: #141D5C; --borde: #26318A; --texto: #F2F4FF; --suave: #A9B1E6; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.45 system-ui, sans-serif;
+         padding: 24px 16px calc(24px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  p { color: var(--suave); margin: 0 0 16px; }
+  video { width: 100%; max-height: 50vh; border-radius: 14px; background: #000; margin-bottom: 16px; }
+  button { width: 100%; border: 0; border-radius: 14px; padding: 16px; font: 700 17px system-ui; margin-bottom: 10px;
+           background: var(--lima); color: #0B1240; }
+  button.borde { background: transparent; color: var(--texto); border: 1px solid var(--borde); }
+  button:disabled { opacity: .5; }
+  textarea { width: 100%; height: 140px; border-radius: 12px; border: 1px solid var(--borde); background: var(--tarjeta);
+             color: var(--texto); padding: 10px; font: 14px system-ui; }
+  #estado { font-size: 14px; color: var(--suave); text-align: center; min-height: 20px; }
+</style>
+</head>
+<body>
+<h1>📤 Compartir en Buffer</h1>
+<p>Pulsa el botón, elige <b>Buffer</b> y marca las 3 redes. El texto ya está copiado: en Buffer solo tienes que pegarlo.</p>
+<video id="v" controls playsinline></video>
+<button id="compartir" disabled>Preparando el vídeo…</button>
+<button class="borde" id="copiar">📋 Copiar el texto otra vez</button>
+<div id="estado"></div>
+<p style="margin-top:16px">Texto:</p>
+<textarea id="t" readonly></textarea>
+<script>
+const q = new URLSearchParams(location.hash.slice(1));
+const url = q.get('v'), texto = q.get('t') || '', nombre = (q.get('n') || 'video') + '.mp4';
+const $ = id => document.getElementById(id);
+$('t').value = texto; $('v').src = url;
+let archivo = null;
+const copiar = () => {
+  try { navigator.clipboard.writeText(texto); } catch (e) {}
+  try { $('t').select(); document.execCommand('copy'); } catch (e) {}
+  $('estado').textContent = '✓ Texto copiado';
+};
+$('copiar').onclick = copiar;
+fetch(url).then(r => r.blob()).then(b => {
+  archivo = new File([b], nombre, { type: 'video/mp4' });
+  const puede = navigator.canShare && navigator.canShare({ files: [archivo] });
+  $('compartir').disabled = false;
+  $('compartir').textContent = puede ? '📤 Compartir vídeo (elige Buffer)' : '⬇️ Descargar vídeo';
+  $('compartir').onclick = () => {
+    copiar();
+    if (puede) navigator.share({ files: [archivo] }).catch(() => {});
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(archivo); a.download = nombre; a.click();
+           $('estado').textContent = 'Este navegador no deja compartir archivos: se ha descargado. Ábrelo desde Buffer.'; }
+  };
+}).catch(() => { $('compartir').textContent = 'No se pudo cargar el vídeo'; });
+</script>
+</body>
+</html>

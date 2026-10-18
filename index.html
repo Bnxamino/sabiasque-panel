@@ -297,6 +297,12 @@ function copiar(t, que) {
     try { document.execCommand('copy'); ok(); } catch (e) { alerta(t); } a.remove(); };
   navigator.clipboard ? navigator.clipboard.writeText(t).then(ok, viejo) : viejo();
 }
+function compartirBuffer(i) {
+  const v = D.almacen[i], t = (v.textos || {}).tiktok || v.tema;
+  copiar(t, 'Texto');
+  abrir(location.origin + location.pathname.replace(/[^/]*$/, '') + 'compartir.html#' +
+        new URLSearchParams({ v: v.url, t, n: v.slug }).toString());
+}
 function abrir(url) { tg && tg.openLink ? tg.openLink(url) : window.open(url); }
 const HECHO = k => { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } };
 function marcar(k, el) { try { localStorage.setItem(k, el.checked ? '1' : '0'); } catch (e) {} }
@@ -308,6 +314,8 @@ function publicarAMano(i) {
       <div style="display:flex;gap:6px;flex-wrap:wrap">${botones}</div>${nota ? `<div class="nota">${nota}</div>` : ''}</div>`;
   const b = (txt, js, cls = 'borde') => `<button class="btn mini-btn ${cls}" onclick="${js}">${txt}</button>`;
   hoja(`<h3>📲 Publicar a mano</h3><div class="nota" style="margin:0 0 4px">${esc(v.tema)}</div>
+    <button class="btn lima" onclick="compartirBuffer(${i})">📤 Compartir a Buffer (las 3 redes a la vez)</button>
+    <div class="nota" style="margin:0 0 4px">Se abre el navegador, eliges <b>Buffer</b> en «Compartir», marcas las 3 redes y pegas el texto (ya copiado). O hazlo red a red:</div>
     ${paso('video', '1. Descarga el vídeo', b('⬇️ Descargar', `descargar(${i})`, 'lima'))}
     ${paso('tiktok', '2. TikTok', b('📋 Copiar texto', `copiar(D.almacen[${i}].textos.tiktok, 'Texto de TikTok')`) + b('Abrir TikTok', "abrir('https://www.tiktok.com/upload')"),
       'Activa «Contenido generado por IA» al publicar.')}
