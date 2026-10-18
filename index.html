@@ -273,6 +273,8 @@ function hojaAlmacen(i) {
     <div style="display:flex;gap:8px"><input type="date" id="f-usar" min="${iso(new Date())}" value="${manana()}">
       <button class="btn" onclick="mandar('/usar ${v.slug} ' + $('f-usar').value, 'Programarlo ese día a las 19:00')">Programar</button></div>
     <button class="btn borde" onclick="mandar('/usar ${v.slug} ahora', 'Publicarlo AHORA en las 3 redes')">Publicar ahora</button>
+    <div style="display:flex;gap:8px"><button class="btn borde" style="flex:1" onclick="descargar(${i})">⬇️ Descargar</button>
+      <button class="btn borde" style="flex:1" onclick="copiarTexto(${i})">📋 Copiar texto</button></div>
     <button class="btn borde" style="color:var(--rojo)" onclick="mandar('/descartar ${v.slug}', 'Descartar este vídeo (se borra)')">🗑️ Descartar</button>
     <button class="btn borde" onclick="cerrarHoja()">Cerrar</button>`);
 }
@@ -284,6 +286,18 @@ function hojaIdea(i) {
     ${x.prioridad ? '' : `<button class="btn" onclick="mandar('/prioridad ' + D.ideas[${i}].idea, null)">⭐ Que sea el siguiente</button>`}
     <button class="btn borde" style="color:var(--rojo)" onclick="mandar('/quitar_idea ' + D.ideas[${i}].idea, 'Quitar esta idea')">Quitar del banco</button>
     <button class="btn borde" onclick="cerrarHoja()">Cerrar</button>`);
+}
+function descargar(i) {
+  const v = D.almacen[i], url = v.url.replace('/video/upload/', '/video/upload/fl_attachment/'), nombre = v.slug + '.mp4';
+  try { if (tg && tg.downloadFile) return tg.downloadFile({ url, file_name: nombre }); } catch (e) {}
+  tg && tg.openLink ? tg.openLink(url) : window.open(url);
+}
+function copiarTexto(i) {
+  const v = D.almacen[i];
+  const t = [v.titulo, v.texto, Array.isArray(v.hashtags) ? v.hashtags.join(' ') : v.hashtags].filter(Boolean).join('\n\n');
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('✓ Texto copiado'),
+    () => hoja(`<h3>Texto para publicar</h3><textarea style="width:100%;height:220px;background:var(--fondo);color:var(--texto);border-radius:12px;padding:10px">${esc(t)}</textarea>
+      <button class="btn borde" onclick="cerrarHoja()">Cerrar</button>`));
 }
 function apuntarIdea() {
   const t = $('idea').value.trim(); if (!t) return alerta('Escribe la idea.');
