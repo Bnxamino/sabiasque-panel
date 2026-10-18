@@ -245,7 +245,7 @@ function mandar(orden, pregunta) {
       } catch (e) { /* si falla, usamos el método antiguo */ }
     }
     if (tg && tg.initData !== undefined && tg.sendData) { try { tg.sendData(orden); return; } catch (e) {} }
-    alerta('Abre el panel desde el botón «📊 Panel» del teclado del bot para poder mandar órdenes. Mientras, escribe en el chat: ' + orden);
+    alerta('Abre el panel desde el botón «📊 Panel» de abajo a la izquierda del chat del bot para poder mandar órdenes. Mientras, escribe en el chat: ' + orden);
   };
   if (!pregunta) return enviar();
   if (tg && tg.showConfirm) tg.showConfirm(pregunta + '?', ok => ok && enviar()); else if (confirm(pregunta + '?')) enviar();
