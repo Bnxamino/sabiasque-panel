@@ -397,7 +397,7 @@ function pintarExtra(d) {
         <button class="btn mini-btn borde" onclick="sugerencia(${i}, '/rechazar ')">✕</button></div></div>`).join('')
       : '<div class="nota" style="margin:6px 0 0">Claude busca la actualidad de estos días y mira qué vídeos funcionan mejor para proponerte temas nuevos.</div>');
   $('hist').innerHTML = (d.historial || []).map(h => `<div class="fila"><small>${esc(h.fecha)}</small><div>${esc(h.tema)}</div></div>`).join('');
-  const c = d.cloudinary || {}, cons = d.consumo || [];
+  const c = d.cloudinary || {}, cons = d.consumo || [], b = d.buffer || {};
   const lunes = new Date(); lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7)); const kl = iso(lunes);
   const sem = cons.filter(x => x.fecha.slice(0, 10) >= kl), min = sem.reduce((a, x) => a + x.minutos, 0), usd = sem.reduce((a, x) => a + x.coste, 0);
   $('salud').innerHTML = `
@@ -409,8 +409,11 @@ function pintarExtra(d) {
       <div class="barra-uso"><div style="width:${Math.min(100, c.creditos_pct || 0)}%"></div></div>`}</div>
     <div class="card"><div style="font-weight:600">Mac mini</div><div class="nota" style="margin:4px 0 0">Disco libre: ${esc(d.disco_libre)} ·
       ${d.trabajando ? 'trabajando ahora' : 'en reposo'}</div></div>
-    <div class="card"><div style="font-weight:600">Buffer</div><div class="nota" style="margin:4px 0 0">Límite de la API: 250 llamadas al día.
-      Cada vídeo programado usa ~4; mover un vídeo ~7. Si se pasa, lo pendiente se reintenta solo.</div></div>`;
+    <div class="card"><div style="font-weight:600">Buffer ${b.bloqueado ? '<span style="color:var(--rojo)">· en pausa por su límite</span>' : ''}</div>
+      <div class="nota" style="margin:4px 0 0">${b.llamadas_24h ?? 0} de ${b.limite || 250} llamadas en las últimas 24 h
+      ${(b.motivos || []).length ? '· ' + b.motivos.map(([m, n]) => esc(m) + ' ' + n).join(', ') : ''}</div>
+      <div class="barra-uso"><div style="width:${Math.min(100, (b.llamadas_24h || 0) / 2.5)}%"></div></div>
+      <div class="nota">Uso normal: ~10–15 al día (programar 2 vídeos = 6, vigilante 1 por pasada, estadísticas 1 por noche).</div></div>`;
 }
 function pintar(d) {
   D = d; pintarExtra(d);
