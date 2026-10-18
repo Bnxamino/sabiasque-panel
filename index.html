@@ -146,6 +146,8 @@
   <div class="card"><div style="font-weight:600">Seguidores (total de las 3 redes)</div><div id="graf"></div>
     <div class="nota" id="seg-nota"></div></div>
   <div class="card lista tabla" id="ranking"></div>
+  <div class="card" id="rend-card" style="display:none"><div style="font-weight:600;margin-bottom:6px">Qué funciona mejor</div>
+    <div id="rend" class="nota" style="white-space:pre-wrap;margin:0"></div></div>
   <p class="nota" id="stats-nota"></p>
 </section>
 <section id="ideas">
@@ -337,8 +339,7 @@ function publicarAMano(i) {
     <button class="btn lima" onclick="compartirBuffer(${i})">📤 Compartir a Buffer (las 3 redes a la vez)</button>
     <div class="nota" style="margin:0 0 4px">Se abre el navegador, eliges <b>Buffer</b> en «Compartir», marcas las 3 redes y pegas el texto (ya copiado). O hazlo red a red:</div>
     ${paso('video', '1. Descarga el vídeo', b('⬇️ Descargar', `descargar(${i})`, 'lima'))}
-    ${paso('tiktok', '2. TikTok', b('📋 Copiar texto', `copiar(D.almacen[${i}].textos.tiktok, 'Texto de TikTok')`) + b('Abrir TikTok', "abrir('https://www.tiktok.com/upload')"),
-      'Activa «Contenido generado por IA» al publicar.')}
+    ${paso('tiktok', '2. TikTok', b('📋 Copiar texto', `copiar(D.almacen[${i}].textos.tiktok, 'Texto de TikTok')`) + b('Abrir TikTok', "abrir('https://www.tiktok.com/upload')"))}
     ${paso('instagram', '3. Instagram (Reel)', b('📋 Copiar texto', `copiar(D.almacen[${i}].textos.instagram, 'Texto de Instagram')`) + b('Abrir Instagram', "abrir('https://www.instagram.com/')"))}
     ${paso('youtube', '4. YouTube (Short)', b('📋 Título', `copiar(D.almacen[${i}].titulo, 'Título')`) + b('📋 Descripción', `copiar(D.almacen[${i}].textos.youtube, 'Descripción')`) + b('Abrir YouTube', "abrir('https://studio.youtube.com/')"))}
     <div class="nota" style="margin:0">¿Prefieres Buffer? Copia los textos de arriba y ${'<a href="#" style="color:var(--lima)" onclick="abrir(\'https://publish.buffer.com/\');return false">abre Buffer</a>'}.</div>
@@ -377,6 +378,7 @@ function pintarExtra(d) {
         Object.entries(v.redes).map(([r, x]) => REDES[r] + ': ' + Object.entries(x.metricas).slice(0, 3).map(([k, val]) => k + ' ' + Math.round(val)).join(' · ')).join('<br>')}</div></div>
         <span class="v">${Math.round(v.vistas || 0)}</span></div>`).join('')
     : '<div class="vacio">Las métricas por vídeo llegan cada noche desde Buffer (la primera, mañana).</div>');
+  if (d.rendimiento) { $('rend-card').style.display = ''; $('rend').textContent = d.rendimiento.replace(/^# .*\n+/, '').replace(/^Lo genera.*\n+/m, '').replace(/## /g, '').trim(); }
   $('stats-nota').textContent = d.estadisticas_de ? 'Estadísticas del ' + d.estadisticas_de.replace('T', ' a las ') + '. Se actualizan solas cada noche o con /stats.' : '';
   const ideas = d.ideas || [];
   const prio = ideas.filter(x => x.prioridad && !x.hecha), banco = ideas.filter(x => !x.prioridad && !x.hecha), hechas = ideas.filter(x => x.hecha);
@@ -448,7 +450,7 @@ function pintar(d) {
   $('cal').innerHTML = html;
 
   $('alm').innerHTML = d.almacen.length ? d.almacen.map((v, i) => `<div class="vid" onclick="hojaAlmacen(${i})">
-      <img src="${miniatura(v.url)}" alt="" loading="lazy"><p>${esc(v.tema)}</p></div>`).join('')
+      <img src="${miniatura(v.url)}" alt="" loading="lazy"><p>${esc(v.tema)}${v.caduca ? `<br><span class="nota">válido hasta ${esc(v.caduca)}</span>` : ''}</p></div>`).join('')
     : `<div class="vacio" style="grid-column:1/-1">El almacén está vacío${d.trabajando ? ': el primer vídeo está en camino' : ''}.</div>`;
 
 
