@@ -249,7 +249,10 @@ function graficaSeguidores(seg) {
   return `<svg class="linea" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#D7FF3B" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>`;
 }
 function pintarExtra(d) {
-  $('alertas').innerHTML = (d.alertas || []).map(a => `<div class="card alerta"><div class="info"><div style="font-weight:600">⚠️ ${esc(a.tema)}</div>
+  const ACC = { mover: 'Mover', cancelar: 'Quitar', usar: 'Programar del almacén', reintentar: 'Reintentar' };
+  $('alertas').innerHTML = (d.cola || []).map(x => `<div class="card alerta" style="border-color:var(--lima)"><div class="info">
+      <div style="font-weight:600">⏳ En cola: ${ACC[x.accion] || x.accion}</div><div class="nota" style="margin:2px 0 0">${esc(x.args.join(' → '))}
+      · se hará solo cuando Buffer lo permita</div></div></div>`).join('') + (d.alertas || []).map(a => `<div class="card alerta"><div class="info"><div style="font-weight:600">⚠️ ${esc(a.tema)}</div>
       <div class="nota" style="margin:2px 0 0">${esc(a.texto)}</div></div>
       ${a.auto ? '' : `<button class="btn mini-btn" onclick="mandar('/reintentar ${a.proyecto}', 'Reintentar')">Reintentar</button>`}</div>`).join('');
   const seg = d.seguidores || [], ult = seg[seg.length - 1] || {}, ant = seg.length > 1 ? seg[seg.length - 2] : null;
