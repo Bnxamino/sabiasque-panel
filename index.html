@@ -77,7 +77,13 @@
   .nota { color: var(--suave); font-size: 12px; margin-top: 8px; }
   #modal { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; place-items: center; z-index: 20; padding: 16px; }
   #modal.on { display: grid; }
-  #modal video { max-height: 86vh; max-width: 100%; border-radius: 12px; }
+  #modal video { max-height: 80vh; max-width: 100%; border-radius: 12px; }
+  #modal .cerrar { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 16px; width: 44px; height: 44px;
+                   border-radius: 50%; border: 0; background: rgba(255,255,255,.15); color: #fff; font-size: 22px; }
+  #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(120px);
+           background: var(--lima); color: #0B1240; font-weight: 700; padding: 12px 18px; border-radius: 14px; z-index: 30;
+           transition: transform .25s; max-width: calc(100% - 32px); text-align: center; }
+  #toast.on { transform: translateX(-50%) translateY(0); }
   #error { color: var(--rojo); }
   .alerta { border-color: rgba(255,90,110,.6); display: flex; gap: 10px; align-items: center; }
   .alerta .info { flex: 1; }
@@ -174,17 +180,32 @@
     <button class="btn borde" onclick="mandar('/vigilar', 'Revisar Buffer ahora')">Revisar Buffer</button>
     <button class="btn borde" onclick="mandar('/estado', null)">Estado al chat</button>
   </div>
-  <p class="nota" id="nota-control">Los botones mandan la orden al bot y cierran el panel; la respuesta te llega al chat.</p>
+  <p class="nota" id="nota-control">Las órdenes se mandan sin cerrar el panel; la respuesta te llega al chat.</p>
 </section>
 
 <div id="hoja" onclick="if(event.target.id==='hoja')cerrarHoja()"><div class="panel" id="hoja-c"></div></div>
-<div id="modal" onclick="cerrar(event)"><video id="player" controls playsinline></video></div>
+<div id="modal" onclick="cerrar(event)"><button class="cerrar" onclick="cerrarVideo()">✕</button><video id="player" controls playsinline></video></div>
+<div id="toast"></div>
 
 <script>
 const tg = window.Telegram && Telegram.WebApp;
-if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#0B1240'); tg.setBackgroundColor('#0B1240'); } catch (e) {} }
+if (tg) {
+  tg.ready(); tg.expand();
+  try { tg.setHeaderColor('#0B1240'); tg.setBackgroundColor('#0B1240'); } catch (e) {}
+  try { tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}   // que deslizar no cierre el panel
+  try { tg.BackButton.onClick(atras); } catch (e) {}
+}
+function atras() {
+  if ($('modal').classList.contains('on')) cerrarVideo(); else if ($('hoja').classList.contains('on')) cerrarHoja();
+  botonAtras();
+}
+function botonAtras() {
+  if (!tg || !tg.BackButton) return;
+  ($('modal').classList.contains('on') || $('hoja').classList.contains('on')) ? tg.BackButton.show() : tg.BackButton.hide();
+}
 const CLOUD = 'dhorbkalc';
-const token = new URLSearchParams(location.hash.slice(1)).get('d');
+const HASH = new URLSearchParams(location.hash.slice(1));
+const token = HASH.get('d'), CANAL = HASH.get('o');
 const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const REDES = { tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube' };
 let n = 5, D = null;
@@ -199,12 +220,25 @@ document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
   b.classList.add('on'); $(b.dataset.t).classList.add('on');
 });
 
-function ver(url) { if (!url) return; $('player').src = url; $('modal').classList.add('on'); $('player').play(); }
-function cerrar(e) { if (e.target.id === 'modal') { $('player').pause(); $('modal').classList.remove('on'); } }
+function ver(url) { if (!url) return; $('player').src = url; $('modal').classList.add('on'); $('player').play(); botonAtras(); }
+function cerrarVideo() { $('player').pause(); $('player').removeAttribute('src'); $('player').load(); $('modal').classList.remove('on'); botonAtras(); }
+function cerrar(e) { if (e.target.id === 'modal') cerrarVideo(); }
+function toast(t) { $('toast').textContent = t; $('toast').classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => $('toast').classList.remove('on'), 3500); }
 function lote(d) { n = Math.max(1, Math.min(15, n + d)); $('n').textContent = n; }
 function mandar(orden, pregunta) {
   if (orden === '/tema ') return alerta('Escribe primero el tema.');
-  const enviar = () => {
+  const enviar = async () => {
+    if (CANAL && tg && tg.initData) {   // sin cerrar el panel: la orden va firmada por Telegram
+      try {
+        const r = await fetch('https://ntfy.sh/' + CANAL, { method: 'POST',
+          body: JSON.stringify({ orden, initData: tg.initData, n: Date.now() + Math.random() }) });
+        if (!r.ok) throw new Error(r.status);
+        cerrarHoja(); toast('✓ Orden enviada · la respuesta te llega al chat');
+        if (orden.startsWith('/idea') || orden.startsWith('/prioridad')) $('idea').value = '';
+        setTimeout(cargar, 8000); setTimeout(cargar, 30000);
+        return;
+      } catch (e) { /* si falla, usamos el método antiguo */ }
+    }
     if (tg && tg.initData !== undefined && tg.sendData) { try { tg.sendData(orden); return; } catch (e) {} }
     alerta('Abre el panel desde el botón «📊 Panel» del teclado del bot para poder mandar órdenes. Mientras, escribe en el chat: ' + orden);
   };
@@ -213,8 +247,8 @@ function mandar(orden, pregunta) {
 }
 function alerta(t) { tg && tg.showAlert ? tg.showAlert(t) : alert(t); }
 
-function hoja(html) { $('hoja-c').innerHTML = html; $('hoja').classList.add('on'); }
-function cerrarHoja() { $('hoja').classList.remove('on'); }
+function hoja(html) { $('hoja-c').innerHTML = html; $('hoja').classList.add('on'); botonAtras(); }
+function cerrarHoja() { $('hoja').classList.remove('on'); botonAtras(); }
 function manana() { const f = new Date(); f.setDate(f.getDate() + 1); return iso(f); }
 function hojaProgramado(i) {
   const p = D.programados[i];
