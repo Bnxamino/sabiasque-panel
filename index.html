@@ -273,9 +273,7 @@ function hojaAlmacen(i) {
     <div style="display:flex;gap:8px"><input type="date" id="f-usar" min="${iso(new Date())}" value="${manana()}">
       <button class="btn" onclick="mandar('/usar ${v.slug} ' + $('f-usar').value, 'Programarlo ese día a las 19:00')">Programar</button></div>
     <button class="btn borde" onclick="mandar('/usar ${v.slug} ahora', 'Publicarlo AHORA en las 3 redes')">Publicar ahora</button>
-    <div style="display:flex;gap:8px"><button class="btn borde" style="flex:1" onclick="descargar(${i})">⬇️ Descargar</button>
-      <button class="btn borde" style="flex:1" onclick="copiarTexto(${i})">📋 Copiar texto</button></div>
-    <button class="btn" onclick="mandar('/publicado ${v.slug}', 'Marcar como ya publicado por ti a mano')">✅ Ya lo he publicado a mano</button>
+    <button class="btn borde" onclick="publicarAMano(${i})">📲 Publicar a mano (paso a paso)</button>
     <button class="btn borde" style="color:var(--rojo)" onclick="mandar('/descartar ${v.slug}', 'Descartar este vídeo (se borra)')">🗑️ Descartar</button>
     <button class="btn borde" onclick="cerrarHoja()">Cerrar</button>`);
 }
@@ -293,12 +291,31 @@ function descargar(i) {
   try { if (tg && tg.downloadFile) return tg.downloadFile({ url, file_name: nombre }); } catch (e) {}
   tg && tg.openLink ? tg.openLink(url) : window.open(url);
 }
-function copiarTexto(i) {
-  const v = D.almacen[i];
-  const t = [v.titulo, v.texto, Array.isArray(v.hashtags) ? v.hashtags.join(' ') : v.hashtags].filter(Boolean).join('\n\n');
-  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('✓ Texto copiado'),
-    () => hoja(`<h3>Texto para publicar</h3><textarea style="width:100%;height:220px;background:var(--fondo);color:var(--texto);border-radius:12px;padding:10px">${esc(t)}</textarea>
-      <button class="btn borde" onclick="cerrarHoja()">Cerrar</button>`));
+function copiar(t, que) {
+  const ok = () => toast('✓ ' + que + ' copiado');
+  const viejo = () => { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
+    try { document.execCommand('copy'); ok(); } catch (e) { alerta(t); } a.remove(); };
+  navigator.clipboard ? navigator.clipboard.writeText(t).then(ok, viejo) : viejo();
+}
+function abrir(url) { tg && tg.openLink ? tg.openLink(url) : window.open(url); }
+const HECHO = k => { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } };
+function marcar(k, el) { try { localStorage.setItem(k, el.checked ? '1' : '0'); } catch (e) {} }
+function publicarAMano(i) {
+  const v = D.almacen[i], tx = v.textos || {}, k = r => 'manual-' + v.slug + '-' + r;
+  const paso = (r, nombre, botones, nota) => `<div class="card" style="margin:0;padding:12px">
+      <label class="toggle" style="margin:0 0 8px;color:var(--texto);font-weight:600"><input type="checkbox" style="width:auto;margin:0"
+        ${HECHO(k(r)) ? 'checked' : ''} onchange="marcar('${k(r)}', this)"> ${nombre}</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${botones}</div>${nota ? `<div class="nota">${nota}</div>` : ''}</div>`;
+  const b = (txt, js, cls = 'borde') => `<button class="btn mini-btn ${cls}" onclick="${js}">${txt}</button>`;
+  hoja(`<h3>📲 Publicar a mano</h3><div class="nota" style="margin:0 0 4px">${esc(v.tema)}</div>
+    ${paso('video', '1. Descarga el vídeo', b('⬇️ Descargar', `descargar(${i})`, 'lima'))}
+    ${paso('tiktok', '2. TikTok', b('📋 Copiar texto', `copiar(D.almacen[${i}].textos.tiktok, 'Texto de TikTok')`) + b('Abrir TikTok', "abrir('https://www.tiktok.com/upload')"),
+      'Activa «Contenido generado por IA» al publicar.')}
+    ${paso('instagram', '3. Instagram (Reel)', b('📋 Copiar texto', `copiar(D.almacen[${i}].textos.instagram, 'Texto de Instagram')`) + b('Abrir Instagram', "abrir('https://www.instagram.com/')"))}
+    ${paso('youtube', '4. YouTube (Short)', b('📋 Título', `copiar(D.almacen[${i}].titulo, 'Título')`) + b('📋 Descripción', `copiar(D.almacen[${i}].textos.youtube, 'Descripción')`) + b('Abrir YouTube', "abrir('https://studio.youtube.com/')"))}
+    <div class="nota" style="margin:0">¿Prefieres Buffer? Copia los textos de arriba y ${'<a href="#" style="color:var(--lima)" onclick="abrir(\'https://publish.buffer.com/\');return false">abre Buffer</a>'}.</div>
+    <button class="btn lima" onclick="mandar('/publicado ${v.slug}', 'Marcar como publicado (sale del almacén y cuenta en el calendario)')">✅ Listo, ya está publicado</button>
+    <button class="btn borde" onclick="cerrarHoja()">Cerrar</button>`);
 }
 function apuntarIdea() {
   const t = $('idea').value.trim(); if (!t) return alerta('Escribe la idea.');
