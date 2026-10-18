@@ -275,6 +275,7 @@ function hojaAlmacen(i) {
     <button class="btn borde" onclick="mandar('/usar ${v.slug} ahora', 'Publicarlo AHORA en las 3 redes')">Publicar ahora</button>
     <div style="display:flex;gap:8px"><button class="btn borde" style="flex:1" onclick="descargar(${i})">⬇️ Descargar</button>
       <button class="btn borde" style="flex:1" onclick="copiarTexto(${i})">📋 Copiar texto</button></div>
+    <button class="btn" onclick="mandar('/publicado ${v.slug}', 'Marcar como ya publicado por ti a mano')">✅ Ya lo he publicado a mano</button>
     <button class="btn borde" style="color:var(--rojo)" onclick="mandar('/descartar ${v.slug}', 'Descartar este vídeo (se borra)')">🗑️ Descartar</button>
     <button class="btn borde" onclick="cerrarHoja()">Cerrar</button>`);
 }
