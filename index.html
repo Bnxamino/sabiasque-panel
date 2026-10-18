@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>¿Sabías que…? Panel</title>
+<meta name="robots" content="noindex">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --azul: #1F3BFF; --lima: #D7FF3B; --fondo: #0B1240; --tarjeta: #141D5C; --borde: #26318A;
+    --texto: #F2F4FF; --suave: #A9B1E6; --rojo: #FF5A6E; --verde: #3BFFA0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--texto); font: 15px/1.45 Inter, system-ui, sans-serif; }
+  body { padding: 0 16px calc(96px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
+  h1, h2, .num { font-family: "Space Grotesk", Inter, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 18px 0 10px; }
+  .logo { width: 44px; height: 44px; border-radius: 12px; background: var(--azul); display: grid; place-items: center;
+          color: var(--lima); font: 700 28px "Space Grotesk"; flex: none; }
+  header h1 { font-size: 20px; margin: 0; }
+  header small { color: var(--suave); display: block; font-size: 12px; }
+  .tabs { position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 10px;
+          background: var(--fondo); scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { flex: none; border: 1px solid var(--borde); background: transparent; color: var(--suave);
+                 padding: 8px 14px; border-radius: 999px; font: 600 14px Inter; }
+  .tabs button.on { background: var(--lima); color: #0B1240; border-color: var(--lima); }
+  section { display: none; } section.on { display: block; }
+  .card { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .kpi { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 14px; padding: 10px; text-align: center; }
+  .kpi .num { font-size: 26px; color: var(--lima); display: block; }
+  .kpi span { font-size: 12px; color: var(--suave); }
+  .actividad { white-space: pre-line; }
+  .pulso { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--verde); margin-right: 6px;
+           animation: p 1.4s infinite; }
+  .pulso.no { background: var(--suave); animation: none; }
+  @keyframes p { 50% { opacity: .3 } }
+  .dia { display: flex; gap: 12px; align-items: center; }
+  .fecha { width: 52px; flex: none; text-align: center; }
+  .fecha b { display: block; font: 700 22px "Space Grotesk"; }
+  .fecha small { color: var(--suave); text-transform: uppercase; font-size: 11px; }
+  .dia .info { flex: 1; min-width: 0; }
+  .dia .tema { font-weight: 600; }
+  .dia.libre .tema { color: var(--suave); font-weight: 400; }
+  .dia.hoy { border-color: var(--lima); }
+  .chips { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+  .chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--borde); color: var(--suave); }
+  .chip.ok { background: rgba(59,255,160,.12); color: var(--verde); border-color: rgba(59,255,160,.4); }
+  .chip.falta { background: rgba(255,90,110,.12); color: var(--rojo); border-color: rgba(255,90,110,.4); }
+  .mini { width: 54px; height: 96px; border-radius: 8px; object-fit: cover; background: #000; flex: none; cursor: pointer; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .vid { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 14px; overflow: hidden; cursor: pointer; }
+  .vid img { width: 100%; aspect-ratio: 9/16; object-fit: cover; display: block; background: #000; }
+  .vid p { margin: 0; padding: 8px 10px 10px; font-size: 13px; font-weight: 600; }
+  .lista .fila { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--borde); }
+  .lista .fila:last-child { border: 0; }
+  .lista .fila small { color: var(--suave); width: 78px; flex: none; }
+  .vacio { color: var(--suave); text-align: center; padding: 24px 10px; }
+  .barras { display: flex; align-items: flex-end; gap: 4px; height: 120px; margin-top: 8px; }
+  .barras div { flex: 1; background: var(--azul); border-radius: 4px 4px 0 0; min-height: 3px; }
+  .barras div.alm { background: var(--lima); }
+  .acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn { border: 0; border-radius: 14px; padding: 14px 10px; font: 700 15px Inter; background: var(--azul); color: #fff; }
+  .btn.lima { background: var(--lima); color: #0B1240; }
+  .btn.borde { background: transparent; border: 1px solid var(--borde); color: var(--texto); }
+  .btn:disabled { opacity: .4; }
+  input { width: 100%; border-radius: 12px; border: 1px solid var(--borde); background: var(--fondo); color: var(--texto);
+          padding: 12px; font: 15px Inter; margin: 8px 0; }
+  .paso { display: flex; align-items: center; gap: 10px; justify-content: center; margin: 8px 0; }
+  .paso button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--borde); background: transparent;
+                 color: var(--texto); font-size: 20px; }
+  .paso b { font: 700 28px "Space Grotesk"; color: var(--lima); min-width: 40px; text-align: center; }
+  .nota { color: var(--suave); font-size: 12px; margin-top: 8px; }
+  #modal { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; place-items: center; z-index: 20; padding: 16px; }
+  #modal.on { display: grid; }
+  #modal video { max-height: 86vh; max-width: 100%; border-radius: 12px; }
+  #error { color: var(--rojo); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">?</div>
+  <div><h1>¿Sabías que…?</h1><small id="actualizado">Cargando…</small></div>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-t="ahora" class="on">Ahora</button>
+  <button data-t="calendario">Calendario</button>
+  <button data-t="almacen">Almacén</button>
+  <button data-t="historial">Temas</button>
+  <button data-t="consumo">Consumo</button>
+  <button data-t="control">Control</button>
+</nav>
+
+<section id="ahora" class="on">
+  <div class="kpis">
+    <div class="kpi"><b class="num" id="k-prog">–</b><span>programados</span></div>
+    <div class="kpi"><b class="num" id="k-alm">–</b><span>en almacén</span></div>
+    <div class="kpi"><b class="num" id="k-dias">–</b><span>días cubiertos</span></div>
+  </div>
+  <div class="card"><div id="estado-titulo" style="font-weight:600;margin-bottom:6px"></div><div class="actividad" id="actividad"></div></div>
+  <div class="card"><div style="font-weight:600;margin-bottom:8px">Próximo vídeo</div><div id="proximo"></div></div>
+  <div class="nota">Disco libre en el Mac: <span id="disco">–</span></div>
+  <p id="error"></p>
+</section>
+
+<section id="calendario"><div id="cal"></div></section>
+<section id="almacen"><div class="grid" id="alm"></div></section>
+<section id="historial"><div class="card lista" id="hist"></div></section>
+<section id="consumo">
+  <div class="card">
+    <div style="font-weight:600">Minutos de trabajo por ejecución</div>
+    <div class="barras" id="barras"></div>
+    <div class="nota">Azul: vídeo del día · Lima: vídeo para el almacén. El coste es lo que costaría por API; con tu plan Max no se paga aparte, pero cuenta para el límite semanal.</div>
+  </div>
+  <div class="card lista" id="cons"></div>
+</section>
+<section id="control">
+  <div class="card">
+    <div style="font-weight:600">Hacer un vídeo de un tema</div>
+    <input id="tema" placeholder="Ej.: por qué el cielo es azul">
+    <button class="btn lima" style="width:100%" onclick="mandar('/tema ' + document.getElementById('tema').value.trim(), 'Hacer un vídeo de este tema')">Fabricar este tema</button>
+  </div>
+  <div class="card">
+    <div style="font-weight:600">Llenar el almacén</div>
+    <div class="paso"><button onclick="lote(-1)">−</button><b id="n">5</b><button onclick="lote(1)">+</button></div>
+    <button class="btn" style="width:100%" onclick="mandar('/lote ' + n, 'Fabricar ' + n + ' vídeos para el almacén')">Fabricar vídeos</button>
+  </div>
+  <div class="acciones">
+    <button class="btn borde" onclick="mandar('/fabricar', 'Hacer ya el vídeo de hoy')">Vídeo de hoy</button>
+    <button class="btn borde" onclick="mandar('/parar', 'Parar el lote después del vídeo actual')">Parar lote</button>
+    <button class="btn borde" onclick="mandar('/vigilar', 'Revisar Buffer ahora')">Revisar Buffer</button>
+    <button class="btn borde" onclick="mandar('/estado', null)">Estado al chat</button>
+  </div>
+  <p class="nota" id="nota-control">Los botones mandan la orden al bot y cierran el panel; la respuesta te llega al chat.</p>
+</section>
+
+<div id="modal" onclick="cerrar(event)"><video id="player" controls playsinline></video></div>
+
+<script>
+const tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#0B1240'); tg.setBackgroundColor('#0B1240'); } catch (e) {} }
+const CLOUD = 'dhorbkalc';
+const token = new URLSearchParams(location.hash.slice(1)).get('d');
+const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+const REDES = { tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube' };
+let n = 5;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const miniatura = url => url && url.includes('/video/upload/')
+  ? url.replace('/video/upload/', '/video/upload/so_3,w_320,h_568,c_fill,q_auto/').replace(/\.mp4$/, '.jpg') : '';
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button, section').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); $(b.dataset.t).classList.add('on');
+});
+
+function ver(url) { if (!url) return; $('player').src = url; $('modal').classList.add('on'); $('player').play(); }
+function cerrar(e) { if (e.target.id === 'modal') { $('player').pause(); $('modal').classList.remove('on'); } }
+function lote(d) { n = Math.max(1, Math.min(15, n + d)); $('n').textContent = n; }
+function mandar(orden, pregunta) {
+  if (orden === '/tema ') return alerta('Escribe primero el tema.');
+  const enviar = () => {
+    if (tg && tg.initData !== undefined && tg.sendData) { try { tg.sendData(orden); return; } catch (e) {} }
+    alerta('Abre el panel desde el botón «📊 Panel» del teclado del bot para poder mandar órdenes. Mientras, escribe en el chat: ' + orden);
+  };
+  if (!pregunta) return enviar();
+  if (tg && tg.showConfirm) tg.showConfirm(pregunta + '?', ok => ok && enviar()); else if (confirm(pregunta + '?')) enviar();
+}
+function alerta(t) { tg && tg.showAlert ? tg.showAlert(t) : alert(t); }
+
+function pintar(d) {
+  const hace = Math.round((Date.now() - new Date(d.actualizado)) / 60000);
+  $('actualizado').textContent = 'Actualizado ' + (hace < 1 ? 'ahora mismo' : 'hace ' + hace + ' min');
+  const hoy = iso(new Date());
+  const futuros = d.programados.filter(p => !p.pasado);
+  $('k-prog').textContent = futuros.length;
+  $('k-alm').textContent = d.almacen.length;
+  $('k-dias').textContent = new Set(futuros.map(p => p.cuando.slice(0, 10))).size + d.almacen.length;
+  $('estado-titulo').innerHTML = `<span class="pulso ${d.trabajando ? '' : 'no'}"></span>${d.trabajando ? 'Trabajando' : 'En reposo'}`;
+  $('actividad').textContent = d.trabajando ? d.actividad : 'No hay nada fabricándose ahora mismo.';
+  $('disco').textContent = d.disco_libre;
+  const p = futuros[0];
+  $('proximo').innerHTML = p ? `<div class="dia">${p.url ? `<img class="mini" src="${miniatura(p.url)}" onclick="ver('${p.url}')" alt="">` : ''}
+      <div class="info"><div class="tema">${esc(p.tema)}</div><div class="nota">${fechaLarga(p.cuando)}</div>${chips(p.redes)}</div></div>`
+    : '<div class="vacio">Nada programado</div>';
+
+  // calendario: 14 días desde hoy
+  const porDia = {};
+  d.programados.forEach(x => (porDia[x.cuando.slice(0, 10)] ||= []).push(x));
+  let html = '';
+  for (let i = 0; i < 14; i++) {
+    const f = new Date(); f.setDate(f.getDate() + i); const k = iso(f);
+    const xs = porDia[k] || [];
+    if (!xs.length) html += `<div class="card dia libre ${i ? '' : 'hoy'}"><div class="fecha"><small>${DIAS[f.getDay()]}</small><b>${f.getDate()}</b></div>
+        <div class="info"><div class="tema">Libre${d.almacen.length ? ' · se cubrirá con el almacén' : ''}</div></div></div>`;
+    xs.forEach(x => html += `<div class="card dia ${i ? '' : 'hoy'}"><div class="fecha"><small>${DIAS[f.getDay()]}</small><b>${f.getDate()}</b></div>
+        <div class="info"><div class="tema">${esc(x.tema)}</div><div class="nota">${x.cuando.slice(11)}${x.pasado ? ' · publicado' : ''}</div>${chips(x.redes)}</div>
+        ${x.url ? `<img class="mini" src="${miniatura(x.url)}" onclick="ver('${x.url}')" alt="" onerror="this.remove()">` : ''}</div>`);
+  }
+  $('cal').innerHTML = html;
+
+  $('alm').innerHTML = d.almacen.length ? d.almacen.map(v => `<div class="vid" onclick="ver('${v.url}')">
+      <img src="${miniatura(v.url)}" alt="" loading="lazy"><p>${esc(v.tema)}</p></div>`).join('')
+    : `<div class="vacio" style="grid-column:1/-1">El almacén está vacío${d.trabajando ? ': el primer vídeo está en camino' : ''}.</div>`;
+
+  $('hist').innerHTML = d.historial.map(h => `<div class="fila"><small>${esc(h.fecha)}</small><div>${esc(h.tema)}</div></div>`).join('')
+    || '<div class="vacio">Sin temas todavía</div>';
+
+  const c = d.consumo.slice(-20), max = Math.max(1, ...c.map(x => x.minutos));
+  $('barras').innerHTML = c.map(x => `<div class="${x.ejecucion.startsWith('almacen') ? 'alm' : ''}" style="height:${x.minutos / max * 100}%" title="${x.minutos} min"></div>`).join('');
+  $('cons').innerHTML = c.slice().reverse().map(x => `<div class="fila"><small>${esc(x.fecha.slice(5))}</small>
+      <div>${x.ejecucion.startsWith('almacen') ? 'Almacén' : 'Vídeo del día'} · ${x.minutos} min · ~${x.coste} $</div></div>`).join('')
+    || '<div class="vacio">Aún no hay datos: aparecerán al terminar el primer vídeo.</div>';
+}
+function chips(redes) {
+  return '<div class="chips">' + Object.keys(REDES).map(r => `<span class="chip ${redes.includes(r) ? 'ok' : 'falta'}">${REDES[r]}</span>`).join('') + '</div>';
+}
+function fechaLarga(c) { const f = new Date(c); return DIAS[f.getDay()] + ' ' + f.getDate() + '/' + (f.getMonth() + 1) + ' a las ' + c.slice(11); }
+
+async function cargar() {
+  if (!token) { $('actualizado').textContent = 'Abre el panel desde el bot de Telegram.'; return; }
+  try {
+    const r = await fetch(`https://res.cloudinary.com/${CLOUD}/raw/upload/v${Date.now()}/sabias-que-panel/${token}.json`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    pintar(await r.json()); $('error').textContent = '';
+  } catch (e) { $('error').textContent = 'No se pudieron cargar los datos (' + e.message + ').'; }
+}
+cargar(); setInterval(cargar, 60000);
+</script>
+</body>
+</html>
