@@ -79,6 +79,25 @@
   #modal.on { display: grid; }
   #modal video { max-height: 86vh; max-width: 100%; border-radius: 12px; }
   #error { color: var(--rojo); }
+  .alerta { border-color: rgba(255,90,110,.6); display: flex; gap: 10px; align-items: center; }
+  .alerta .info { flex: 1; }
+  .alerta button { flex: none; }
+  .btn.mini-btn { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+  .redes3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .delta { font-size: 12px; color: var(--verde); } .delta.neg { color: var(--rojo); }
+  svg.linea { width: 100%; height: 130px; display: block; }
+  .tabla .fila { align-items: center; }
+  .tabla .v { margin-left: auto; font: 700 16px "Space Grotesk"; color: var(--lima); }
+  .barra-uso { height: 8px; background: var(--fondo); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .barra-uso div { height: 100%; background: var(--lima); }
+  .toggle { display: flex; gap: 8px; align-items: center; color: var(--suave); font-size: 14px; margin-bottom: 8px; }
+  .prio { color: var(--lima); }
+  #hoja { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: flex-end; z-index: 15; }
+  #hoja.on { display: flex; }
+  #hoja .panel { background: var(--tarjeta); width: 100%; max-width: 640px; margin: 0 auto; border-radius: 20px 20px 0 0;
+                 padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); display: grid; gap: 8px; }
+  #hoja h3 { margin: 0 0 4px; font: 700 17px "Space Grotesk"; }
+  #hoja input[type=date] { color-scheme: dark; margin: 0; }
 </style>
 </head>
 <body>
@@ -90,26 +109,46 @@
   <button data-t="ahora" class="on">Ahora</button>
   <button data-t="calendario">Calendario</button>
   <button data-t="almacen">Almacén</button>
-  <button data-t="historial">Temas</button>
+  <button data-t="stats">Estadísticas</button>
+  <button data-t="ideas">Ideas</button>
   <button data-t="consumo">Consumo</button>
+  <button data-t="sistema">Sistema</button>
   <button data-t="control">Control</button>
 </nav>
 
 <section id="ahora" class="on">
+  <div id="alertas"></div>
   <div class="kpis">
     <div class="kpi"><b class="num" id="k-prog">–</b><span>programados</span></div>
     <div class="kpi"><b class="num" id="k-alm">–</b><span>en almacén</span></div>
     <div class="kpi"><b class="num" id="k-dias">–</b><span>días cubiertos</span></div>
   </div>
   <div class="card"><div id="estado-titulo" style="font-weight:600;margin-bottom:6px"></div><div class="actividad" id="actividad"></div></div>
-  <div class="card"><div style="font-weight:600;margin-bottom:8px">Próximo vídeo</div><div id="proximo"></div></div>
+  <div class="card" onclick="D && D.programados.find(p => !p.pasado) && hojaProgramado(D.programados.indexOf(D.programados.find(p => !p.pasado)))"><div style="font-weight:600;margin-bottom:8px">Próximo vídeo</div><div id="proximo"></div></div>
   <div class="nota">Disco libre en el Mac: <span id="disco">–</span></div>
   <p id="error"></p>
 </section>
 
 <section id="calendario"><div id="cal"></div></section>
 <section id="almacen"><div class="grid" id="alm"></div></section>
-<section id="historial"><div class="card lista" id="hist"></div></section>
+<section id="stats">
+  <div class="redes3" id="seg"></div>
+  <div class="card"><div style="font-weight:600">Seguidores (total de las 3 redes)</div><div id="graf"></div>
+    <div class="nota" id="seg-nota"></div></div>
+  <div class="card lista tabla" id="ranking"></div>
+  <p class="nota" id="stats-nota"></p>
+</section>
+<section id="ideas">
+  <div class="card">
+    <div style="font-weight:600">Apuntar una idea</div>
+    <input id="idea" placeholder="Ej.: por qué se nos duermen los pies">
+    <label class="toggle"><input type="checkbox" id="prio" style="width:auto;margin:0"> Prioridad: que sea el próximo vídeo</label>
+    <button class="btn lima" style="width:100%" onclick="apuntarIdea()">Apuntar</button>
+  </div>
+  <div class="card lista" id="lista-ideas"></div>
+  <div class="card lista"><div style="font-weight:600;margin-bottom:4px">Temas ya hechos (no se repiten)</div><div id="hist"></div></div>
+</section>
+<section id="sistema"><div id="salud"></div></section>
 <section id="consumo">
   <div class="card">
     <div style="font-weight:600">Minutos de trabajo por ejecución</div>
@@ -138,6 +177,7 @@
   <p class="nota" id="nota-control">Los botones mandan la orden al bot y cierran el panel; la respuesta te llega al chat.</p>
 </section>
 
+<div id="hoja" onclick="if(event.target.id==='hoja')cerrarHoja()"><div class="panel" id="hoja-c"></div></div>
 <div id="modal" onclick="cerrar(event)"><video id="player" controls playsinline></video></div>
 
 <script>
@@ -147,7 +187,7 @@ const CLOUD = 'dhorbkalc';
 const token = new URLSearchParams(location.hash.slice(1)).get('d');
 const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const REDES = { tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube' };
-let n = 5;
+let n = 5, D = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -173,7 +213,80 @@ function mandar(orden, pregunta) {
 }
 function alerta(t) { tg && tg.showAlert ? tg.showAlert(t) : alert(t); }
 
+function hoja(html) { $('hoja-c').innerHTML = html; $('hoja').classList.add('on'); }
+function cerrarHoja() { $('hoja').classList.remove('on'); }
+function manana() { const f = new Date(); f.setDate(f.getDate() + 1); return iso(f); }
+function hojaProgramado(i) {
+  const p = D.programados[i];
+  hoja(`<h3>${esc(p.tema)}</h3><div class="nota" style="margin:0 0 6px">${fechaLarga(p.cuando)}</div>
+    ${p.url ? `<button class="btn borde" onclick="cerrarHoja();ver('${p.url}')">▶️ Ver el vídeo</button>` : ''}
+    ${p.pasado ? '' : `<div style="display:flex;gap:8px"><input type="date" id="f-mover" min="${iso(new Date())}" value="${p.cuando.slice(0,10)}">
+      <button class="btn" onclick="mandar('/mover ${p.proyecto} ' + $('f-mover').value, 'Mover a ese día')">Mover</button></div>
+    <button class="btn borde" onclick="mandar('/reintentar ${p.proyecto}', 'Reintentar las redes que fallaron o faltan')">🔁 Reintentar redes que faltan</button>
+    <button class="btn borde" style="color:var(--rojo)" onclick="mandar('/cancelar ${p.proyecto}', 'Quitarlo de la programación y devolverlo al almacén')">Quitar y devolver al almacén</button>`}
+    <button class="btn borde" onclick="cerrarHoja()">Cerrar</button>`);
+}
+function hojaAlmacen(i) {
+  const v = D.almacen[i];
+  hoja(`<h3>${esc(v.tema)}</h3>
+    <button class="btn borde" onclick="cerrarHoja();ver('${v.url}')">▶️ Ver el vídeo</button>
+    <button class="btn lima" onclick="mandar('/usar ${v.slug} ${manana()}', 'Publicarlo mañana a las 19:00')">Publicar mañana</button>
+    <div style="display:flex;gap:8px"><input type="date" id="f-usar" min="${iso(new Date())}" value="${manana()}">
+      <button class="btn" onclick="mandar('/usar ${v.slug} ' + $('f-usar').value, 'Programarlo ese día a las 19:00')">Programar</button></div>
+    <button class="btn borde" onclick="mandar('/usar ${v.slug} ahora', 'Publicarlo AHORA en las 3 redes')">Publicar ahora</button>
+    <button class="btn borde" style="color:var(--rojo)" onclick="mandar('/descartar ${v.slug}', 'Descartar este vídeo (se borra)')">🗑️ Descartar</button>
+    <button class="btn borde" onclick="cerrarHoja()">Cerrar</button>`);
+}
+function apuntarIdea() {
+  const t = $('idea').value.trim(); if (!t) return alerta('Escribe la idea.');
+  mandar(($('prio').checked ? '/prioridad ' : '/idea ') + t, null);
+}
+function graficaSeguidores(seg) {
+  if (seg.length < 2) return '<div class="vacio">La gráfica aparece a partir del segundo día de datos.</div>';
+  const tot = seg.map(s => (s.tiktok || 0) + (s.instagram || 0) + (s.youtube || 0));
+  const mn = Math.min(...tot), mx = Math.max(...tot), W = 300, H = 120;
+  const pts = tot.map((v, i) => `${(i / (tot.length - 1) * W).toFixed(1)},${(H - 8 - (v - mn) / Math.max(1, mx - mn) * (H - 16)).toFixed(1)}`).join(' ');
+  return `<svg class="linea" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#D7FF3B" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function pintarExtra(d) {
+  $('alertas').innerHTML = (d.alertas || []).map(a => `<div class="card alerta"><div class="info"><div style="font-weight:600">⚠️ ${esc(a.tema)}</div>
+      <div class="nota" style="margin:2px 0 0">${esc(a.texto)}</div></div>
+      ${a.auto ? '' : `<button class="btn mini-btn" onclick="mandar('/reintentar ${a.proyecto}', 'Reintentar')">Reintentar</button>`}</div>`).join('');
+  const seg = d.seguidores || [], ult = seg[seg.length - 1] || {}, ant = seg.length > 1 ? seg[seg.length - 2] : null;
+  const RED = [['tiktok', 'TikTok'], ['instagram', 'Instagram'], ['youtube', 'YouTube']];
+  $('seg').innerHTML = RED.map(([k, nom]) => {
+    const dlt = ant && ult[k] != null && ant[k] != null ? ult[k] - ant[k] : null;
+    return `<div class="kpi"><b class="num">${ult[k] ?? '–'}</b><span>${nom}</span>${dlt !== null ? `<div class="delta ${dlt < 0 ? 'neg' : ''}">${dlt >= 0 ? '+' : ''}${dlt}</div>` : ''}</div>`;
+  }).join('');
+  $('graf').innerHTML = graficaSeguidores(seg);
+  $('seg-nota').textContent = ult.tiktok_likes ? `Likes totales en TikTok: ${ult.tiktok_likes}` : '';
+  const est = d.estadisticas || [];
+  $('ranking').innerHTML = '<div style="font-weight:600;margin-bottom:4px">Vídeos por visualizaciones (3 redes)</div>' + (est.length
+    ? est.map((v, i) => `<div class="fila"><small style="width:24px">${i + 1}</small><div>${esc(v.tema)}<div class="nota" style="margin:0">${
+        Object.entries(v.redes).map(([r, x]) => REDES[r] + ': ' + Object.entries(x.metricas).slice(0, 3).map(([k, val]) => k + ' ' + Math.round(val)).join(' · ')).join('<br>')}</div></div>
+        <span class="v">${Math.round(v.vistas || 0)}</span></div>`).join('')
+    : '<div class="vacio">Las métricas por vídeo llegan cada noche desde Buffer (la primera, mañana).</div>');
+  $('stats-nota').textContent = d.estadisticas_de ? 'Estadísticas del ' + d.estadisticas_de.replace('T', ' a las ') + '. Se actualizan solas cada noche o con /stats.' : '';
+  const ideas = d.ideas || [], hechos = (d.historial || []).map(h => h.tema.toLowerCase());
+  $('lista-ideas').innerHTML = '<div style="font-weight:600;margin-bottom:4px">Banco de ideas</div>' + ideas.map(x =>
+    `<div class="fila"><small>${x.prioridad ? '<span class="prio">⭐ prioridad</span>' : esc(x.seccion.split(' ')[0])}</small><div>${esc(x.idea)}</div></div>`).join('');
+  const c = d.cloudinary || {}, cons = d.consumo || [];
+  const lunes = new Date(); lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7)); const kl = iso(lunes);
+  const sem = cons.filter(x => x.fecha.slice(0, 10) >= kl), min = sem.reduce((a, x) => a + x.minutos, 0), usd = sem.reduce((a, x) => a + x.coste, 0);
+  $('salud').innerHTML = `
+    <div class="card"><div style="font-weight:600">Claude esta semana</div>
+      <div class="nota" style="margin:4px 0 0">${sem.length} ejecuciones · ${Math.round(min)} min de trabajo · ~${usd.toFixed(0)} $ equivalentes.
+      Con el plan Max no pagas esto aparte; cuenta para tu límite semanal (míralo en claude.ai → Ajustes → Uso).</div></div>
+    <div class="card"><div style="font-weight:600">Cloudinary (vídeos en la nube)</div>${c.error ? `<div class="nota">No disponible: ${esc(c.error)}</div>` : `
+      <div class="nota" style="margin:4px 0 0">${c.recursos ?? '–'} archivos · ${c.almacenamiento_mb ?? '–'} MB · cuota del plan gratis usada: ${c.creditos_pct ?? '–'} %</div>
+      <div class="barra-uso"><div style="width:${Math.min(100, c.creditos_pct || 0)}%"></div></div>`}</div>
+    <div class="card"><div style="font-weight:600">Mac mini</div><div class="nota" style="margin:4px 0 0">Disco libre: ${esc(d.disco_libre)} ·
+      ${d.trabajando ? 'trabajando ahora' : 'en reposo'}</div></div>
+    <div class="card"><div style="font-weight:600">Buffer</div><div class="nota" style="margin:4px 0 0">Límite de la API: 250 llamadas al día.
+      Cada vídeo programado usa ~4; mover un vídeo ~7. Si se pasa, lo pendiente se reintenta solo.</div></div>`;
+}
 function pintar(d) {
+  D = d; pintarExtra(d);
   const hace = Math.round((Date.now() - new Date(d.actualizado)) / 60000);
   $('actualizado').textContent = 'Actualizado ' + (hace < 1 ? 'ahora mismo' : 'hace ' + hace + ' min');
   const hoy = iso(new Date());
@@ -185,7 +298,7 @@ function pintar(d) {
   $('actividad').textContent = d.trabajando ? d.actividad : 'No hay nada fabricándose ahora mismo.';
   $('disco').textContent = d.disco_libre;
   const p = futuros[0];
-  $('proximo').innerHTML = p ? `<div class="dia">${p.url ? `<img class="mini" src="${miniatura(p.url)}" onclick="ver('${p.url}')" alt="">` : ''}
+  $('proximo').innerHTML = p ? `<div class="dia">${p.url ? `<img class="mini" src="${miniatura(p.url)}" alt="">` : ''}
       <div class="info"><div class="tema">${esc(p.tema)}</div><div class="nota">${fechaLarga(p.cuando)}</div>${chips(p.redes)}</div></div>`
     : '<div class="vacio">Nada programado</div>';
 
@@ -198,13 +311,13 @@ function pintar(d) {
     const xs = porDia[k] || [];
     if (!xs.length) html += `<div class="card dia libre ${i ? '' : 'hoy'}"><div class="fecha"><small>${DIAS[f.getDay()]}</small><b>${f.getDate()}</b></div>
         <div class="info"><div class="tema">Libre${d.almacen.length ? ' · se cubrirá con el almacén' : ''}</div></div></div>`;
-    xs.forEach(x => html += `<div class="card dia ${i ? '' : 'hoy'}"><div class="fecha"><small>${DIAS[f.getDay()]}</small><b>${f.getDate()}</b></div>
+    xs.forEach(x => html += `<div class="card dia ${i ? '' : 'hoy'}" onclick="hojaProgramado(${d.programados.indexOf(x)})"><div class="fecha"><small>${DIAS[f.getDay()]}</small><b>${f.getDate()}</b></div>
         <div class="info"><div class="tema">${esc(x.tema)}</div><div class="nota">${x.cuando.slice(11)}${x.pasado ? ' · publicado' : ''}</div>${chips(x.redes)}</div>
-        ${x.url ? `<img class="mini" src="${miniatura(x.url)}" onclick="ver('${x.url}')" alt="" onerror="this.remove()">` : ''}</div>`);
+        ${x.url ? `<img class="mini" src="${miniatura(x.url)}" alt="" onerror="this.remove()">` : ''}</div>`);
   }
   $('cal').innerHTML = html;
 
-  $('alm').innerHTML = d.almacen.length ? d.almacen.map(v => `<div class="vid" onclick="ver('${v.url}')">
+  $('alm').innerHTML = d.almacen.length ? d.almacen.map((v, i) => `<div class="vid" onclick="hojaAlmacen(${i})">
       <img src="${miniatura(v.url)}" alt="" loading="lazy"><p>${esc(v.tema)}</p></div>`).join('')
     : `<div class="vacio" style="grid-column:1/-1">El almacén está vacío${d.trabajando ? ': el primer vídeo está en camino' : ''}.</div>`;
 
