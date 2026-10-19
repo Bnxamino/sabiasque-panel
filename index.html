@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>¿Sabías que…? Panel</title>
+<link rel="icon" href="icono-32.png">
+<link rel="apple-touch-icon" href="icono-180.png">
 <meta name="robots" content="noindex">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -114,7 +116,6 @@
 <header style="align-items:center">
   <div class="logo">?</div>
   <div><h1>¿Sabías que…?</h1><small id="actualizado">Cargando…</small></div>
-  <button id="btn-atajo" class="mini-btn" style="display:none;margin-left:auto;white-space:nowrap" onclick="crearAtajo()">➕ Acceso directo</button>
 </header>
 <nav class="tabs" id="tabs">
   <button data-t="ahora" class="on">Ahora</button>
@@ -343,23 +344,6 @@ function compartirBuffer(i) {
 }
 function abrir(url) { tg && tg.openLink ? tg.openLink(url) : window.open(url); }
 
-function comprobarAtajo() {
-  if (!tg || !tg.checkHomeScreenStatus) return;   // versión vieja de Telegram: sin esta función, se queda oculto
-  try {
-    tg.checkHomeScreenStatus(estado => {
-      $('btn-atajo').style.display = (estado === 'missed' || estado === 'unknown') ? '' : 'none';
-    });
-  } catch (e) {}
-}
-function crearAtajo() {
-  if (!tg || !tg.addToHomeScreen) return alerta('Actualiza Telegram para poder añadir el acceso directo.');
-  tg.addToHomeScreen();
-}
-if (tg) {
-  tg.onEvent && tg.onEvent('homeScreenAdded', () => { $('btn-atajo').style.display = 'none'; toast('✓ Añadido a la pantalla de inicio'); });
-  tg.onEvent && tg.onEvent('homeScreenChecked', comprobarAtajo);
-  comprobarAtajo();
-}
 const HECHO = k => { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } };
 function marcar(k, el) { try { localStorage.setItem(k, el.checked ? '1' : '0'); } catch (e) {} }
 function publicarAMano(i) {
