@@ -212,8 +212,11 @@ function botonAtras() {
   ($('modal').classList.contains('on') || $('hoja').classList.contains('on')) ? tg.BackButton.show() : tg.BackButton.hide();
 }
 const CLOUD = 'dhorbkalc';
+// el acceso directo / enlace de BotFather puede abrir la URL fija (sin #) en vez del enlace con hash que
+// manda el bot: se acepta el token/canal tanto por query (?d=...&o=...) como por hash (#d=...&o=...)
 const HASH = new URLSearchParams(location.hash.slice(1));
-const token = HASH.get('d'), CANAL = HASH.get('o');
+const QUERY = new URLSearchParams(location.search);
+const token = HASH.get('d') || QUERY.get('d'), CANAL = HASH.get('o') || QUERY.get('o');
 const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const REDES = { tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube' };
 let n = 5, D = null;
