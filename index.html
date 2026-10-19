@@ -15,7 +15,7 @@
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--fondo); color: var(--texto); font: 15px/1.45 Inter, system-ui, sans-serif; }
-  body { padding: 0 16px calc(96px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
+  body { padding: env(safe-area-inset-top) 16px calc(96px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
   h1, h2, .num { font-family: "Space Grotesk", Inter, sans-serif; }
   header { display: flex; align-items: center; gap: 12px; padding: 18px 0 10px; }
   .logo { width: 44px; height: 44px; border-radius: 12px; background: var(--azul); display: grid; place-items: center;
@@ -202,6 +202,18 @@ if (tg) {
   try { tg.setHeaderColor('#0B1240'); tg.setBackgroundColor('#0B1240'); } catch (e) {}
   try { tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}   // que deslizar no cierre el panel
   try { tg.BackButton.onClick(atras); } catch (e) {}
+  ajustarMargenSuperior();
+  try { tg.onEvent('safeAreaChanged', ajustarMargenSuperior); } catch (e) {}
+  try { tg.onEvent('contentSafeAreaChanged', ajustarMargenSuperior); } catch (e) {}
+  try { tg.onEvent('fullscreenChanged', ajustarMargenSuperior); } catch (e) {}
+}
+function ajustarMargenSuperior() {
+  if (!tg) return;
+  const a = (tg.safeAreaInset && tg.safeAreaInset.top) || 0;
+  const b = (tg.contentSafeAreaInset && tg.contentSafeAreaInset.top) || 0;
+  // el acceso directo de BotFather añade barras nativas que la API a veces no reporta: un mínimo de 100px
+  // por garantía, además de lo que diga la API (nunca menos, por si en algún modo hiciera falta más)
+  document.body.style.paddingTop = Math.max(a + b, 100) + 'px';
 }
 function atras() {
   if ($('modal').classList.contains('on')) cerrarVideo(); else if ($('hoja').classList.contains('on')) cerrarHoja();
